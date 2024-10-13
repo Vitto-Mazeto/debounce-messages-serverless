@@ -10,7 +10,7 @@ O sistema é composto pelos seguintes componentes:
 
 1. **DynamoDB**: Armazena as mensagens recebidas.
 2. **Lambda Functions**:
-   - `recieve_message`: Recebe mensagens e inicia o processo de debounce.
+   - `post_message`: Recebe mensagens e inicia o processo de debounce.
    - `process_message`: Processa as mensagens após o período de debounce.
 3. **Step Functions**: Implementa a lógica de debounce, esperando 10 segundos antes de processar a mensagem.
 4. **IAM Roles**: Gerencia as permissões necessárias para os serviços da AWS.
@@ -31,7 +31,7 @@ O sistema é composto pelos seguintes componentes:
 
 2. Prepare os arquivos ZIP para as funções Lambda:
    ```
-   zip -j recieve_message.zip lambda/recieve_message.py
+   zip -j post_message.zip lambda/post_message.py
    zip -j process_message.zip lambda/process_message.py
    ```
    Ou use o script da pasta 'util'.
@@ -60,7 +60,8 @@ O sistema é composto pelos seguintes componentes:
 Após o deploy, você terá um endpoint no **API Gateway** para receber mensagens. Use este endpoint para integrar com o seu sistema de mensagens do WhatsApp, Instagram, Telegram, ...
 
 O fluxo de processamento será:
-1. A mensagem é recebida pela função `recieve_message`.
+1. A mensagem é recebida pela função `post_message`.
+   - É o que deverá ser chamado pelo seu sistema de mensagens.
 2. A mensagem é armazenada no DynamoDB.
 3. Uma execução do Step Function é iniciada.
 4. Após 10 segundos, a função `process_message` é chamada para processar a mensagem.
@@ -81,7 +82,7 @@ project/
 │   ├── lambda/             # Módulo para funções Lambda
 │   └── step_functions/     # Módulo para Step Functions
 └── lambda/                 # Código fonte das funções Lambda
-    ├── recieve_message.py
+    ├── post_message.py
     └── process_message.py
 ```
 
