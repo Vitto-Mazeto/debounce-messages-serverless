@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-Este projeto implementa um sistema serverless na AWS para processar mensagens do WhatsApp com um mecanismo de debounce. Ele utiliza diversos serviços da AWS, incluindo Lambda, DynamoDB, e Step Functions, todos orquestrados e provisionados usando Terraform.
+Este projeto implementa um sistema serverless na AWS para processar mensagens do WhatsApp (ou outras ferramentas de mensagem ex: Direct, Telegram, ...) com um mecanismo de debounce. Ele utiliza diversos serviços da AWS, incluindo Lambda, DynamoDB, API Gateway e Step Functions, todos orquestrados e provisionados usando Terraform.
 
 ## Arquitetura
 
@@ -29,16 +29,12 @@ O sistema é composto pelos seguintes componentes:
    cd message-debouncer-serverless
    ```
 
-2. (Opcional) Modifique o arquivo `terraform.tfvars` se quiser personalizar alguma variável:
-   ```
-   dynamodb_table_name = "WhatsAppMessages"
-   ```
-
-3. Prepare os arquivos ZIP para as funções Lambda:
+2. Prepare os arquivos ZIP para as funções Lambda:
    ```
    zip -j recieve_message.zip lambda/recieve_message.py
    zip -j process_message.zip lambda/process_message.py
    ```
+   Ou use o script da pasta 'util'.
 
 ## Deploying
 
@@ -61,7 +57,7 @@ O sistema é composto pelos seguintes componentes:
 
 ## Uso
 
-Após o deploy, você terá um endpoint para receber mensagens. Use este endpoint para integrar com o seu sistema de mensagens do WhatsApp.
+Após o deploy, você terá um endpoint no **API Gateway** para receber mensagens. Use este endpoint para integrar com o seu sistema de mensagens do WhatsApp, Instagram, Telegram, ...
 
 O fluxo de processamento será:
 1. A mensagem é recebida pela função `recieve_message`.
@@ -81,7 +77,7 @@ project/
 ├── terraform.tfvars        # Valores das variáveis
 ├── modules/                # Módulos Terraform
 │   ├── dynamodb/           # Módulo para o DynamoDB
-│   ├── iam/                # Módulo para IAM roles e policies
+│   ├── api_gateway/        # Módulo para o API Gateway
 │   ├── lambda/             # Módulo para funções Lambda
 │   └── step_functions/     # Módulo para Step Functions
 └── lambda/                 # Código fonte das funções Lambda
@@ -92,7 +88,7 @@ project/
 ## Customização
 
 - Para modificar o tempo de debounce, altere o valor `Seconds` no arquivo `modules/step_functions/main.tf`.
-- Para adicionar ou modificar permissões, ajuste as políticas IAM no arquivo `modules/iam/main.tf`.
+- Caso queria redirecionar para outro processamento após receber a mensagem já concatenada no process_message, altere o código da função `process_message.py`.
 
 ## Limpeza
 
