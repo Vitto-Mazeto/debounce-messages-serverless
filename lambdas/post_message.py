@@ -22,7 +22,11 @@ def decimal_to_float(obj):
 
 def get_existing_message(phone_number):
     """Retrieve an existing message from DynamoDB."""
-    return table.get_item(Key={'phone_number': phone_number})
+    try:
+        return table.get_item(Key={'phone_number': phone_number})
+    except Exception as e:
+        logger.error(f"Failed to retrieve message for {phone_number}: {str(e)}")
+        raise
 
 
 def update_existing_message(phone_number, existing_message, new_text, timestamp):
@@ -31,16 +35,20 @@ def update_existing_message(phone_number, existing_message, new_text, timestamp)
     existing_text = existing_message.get('text', '')
     concatenated_text = f"{existing_text} {new_text}".strip()
 
-    return table.update_item(
-        Key={'phone_number': phone_number},
-        UpdateExpression="SET #txt = :t, last_update = :lu",
-        ExpressionAttributeNames={'#txt': 'text'},
-        ExpressionAttributeValues={
-            ':t': concatenated_text,
-            ':lu': timestamp
-        },
-        ReturnValues="ALL_NEW"
-    )['Attributes']
+    try:
+        return table.update_item(
+            Key={'phone_number': phone_number},
+            UpdateExpression="SET #txt = :t, last_update = :lu",
+            ExpressionAttributeNames={'#txt': 'text'},
+            ExpressionAttributeValues={
+                ':t': concatenated_text,
+                ':lu': timestamp
+            },
+            ReturnValues="ALL_NEW"
+        )['Attributes']
+    except Exception as e:
+        logger.error(f"Failed to update message for {phone_number}: {str(e)}")
+        raise
 
 
 def cancel_existing_execution(existing_message):
@@ -56,65 +64,83 @@ def cancel_existing_execution(existing_message):
             )
         except step_functions.exceptions.ExecutionDoesNotExist:
             logger.warning(f"Execution {execution_arn} does not exist, might have completed already.")
+        except Exception as e:
+            logger.error(f"Failed to cancel execution {execution_arn}: {str(e)}")
 
 
 def create_new_message(phone_number, text, timestamp):
     """Create a new message entry in DynamoDB."""
     logger.info(f"Creating new message for {phone_number}")
-    table.put_item(
-        Item={
-            'phone_number': phone_number,
-            'text': text,
-            'last_update': timestamp
-        }
-    )
-    return {'text': text, 'last_update': timestamp}
+    try:
+        table.put_item(
+            Item={
+                'phone_number': phone_number,
+                'text': text,
+                'last_update': timestamp
+            }
+        )
+        return {'text': text, 'last_update': timestamp}
+    except Exception as e:
+        logger.error(f"Failed to create new message for {phone_number}: {str(e)}")
+        raise
 
 
 def start_step_function_execution(phone_number, message_text, last_update):
     """Start a new Step Functions execution."""
-    execution = step_functions.start_execution(
-        stateMachineArn=os.environ['STEP_FUNCTION_ARN'],
-        input=json.dumps({
-            'phone_number': phone_number,
-            'message': message_text,
-            'last_update': last_update
-        }, default=decimal_to_float)
-    )
-    return execution['executionArn']
+    try:
+        execution = step_functions.start_execution(
+            stateMachineArn=os.environ['STEP_FUNCTION_ARN'],
+            input=json.dumps({
+                'phone_number': phone_number,
+                'message': message_text,
+                'last_update': last_update
+            }, default=decimal_to_float)
+        )
+        return execution['executionArn']
+    except Exception as e:
+        logger.error(f"Failed to start Step Function execution for {phone_number}: {str(e)}")
+        raise
 
 
 def lambda_handler(event, context):
     """Lambda function entry point."""
-    message = json.loads(event['body'])
-    phone_number = message['phoneNumber']
-    text = message['message']
-    timestamp = int(time.time())
+    try:
+        message = json.loads(event['body'])
+        phone_number = message['phoneNumber']
+        text = message['message']
+        timestamp = int(time.time())
+        logger.info('Received message from %s: %s', phone_number, text)
 
-    response = get_existing_message(phone_number)
+        response = get_existing_message(phone_number)
 
-    if 'Item' in response:
-        existing_message = response['Item']
-        cancel_existing_execution(existing_message)
-        updated_message = update_existing_message(phone_number, existing_message, text, timestamp)
-    else:
-        updated_message = create_new_message(phone_number, text, timestamp)
+        if 'Item' in response:
+            existing_message = response['Item']
+            cancel_existing_execution(existing_message)
+            updated_message = update_existing_message(phone_number, existing_message, text, timestamp)
+        else:
+            updated_message = create_new_message(phone_number, text, timestamp)
 
-    execution_arn = start_step_function_execution(
-        phone_number,
-        updated_message['text'],
-        updated_message['last_update']
-    )
+        execution_arn = start_step_function_execution(
+            phone_number,
+            updated_message['text'],
+            updated_message['last_update']
+        )
 
-    table.update_item(
-        Key={'phone_number': phone_number},
-        UpdateExpression="SET execution_arn = :arn",
-        ExpressionAttributeValues={':arn': execution_arn}
-    )
+        table.update_item(
+            Key={'phone_number': phone_number},
+            UpdateExpression="SET execution_arn = :arn",
+            ExpressionAttributeValues={':arn': execution_arn}
+        )
 
-    logger.info('Message received and Step Functions execution started for %s', phone_number)
+        logger.info('Message received and Step Functions execution started for %s', phone_number)
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Message received and Step Functions execution started')
-    }
+        return {
+            'statusCode': 200,
+            'body': json.dumps('Message received and Step Functions execution started')
+        }
+    except Exception as e:
+        logger.error(f"Error processing message: {str(e)}")
+        return {
+            'statusCode': 500,
+            'body': json.dumps('Internal server error')
+        }
