@@ -4,6 +4,13 @@
 
 Este projeto implementa um sistema serverless na AWS para processar mensagens do WhatsApp (ou outras ferramentas de mensagem ex: Direct, Telegram, ...) com um mecanismo de debounce. Ele utiliza diversos serviços da AWS, incluindo Lambda, DynamoDB, API Gateway e Step Functions, todos orquestrados e provisionados usando Terraform.
 
+## Motivo
+Ao desenvolver diversas soluções de integração com aplicativos de mensageria, percebi que o envio de mensagens 'picadas', ou seja, em que o contexto geral da solicitação era passado por várias mensagens, era um problema comum. Para resolver isso, criei este projeto para concatenar mensagens recebidas de um mesmo número em um período de tempo curto.
+Assim, o sistema aguarda em lote as mensagens recebidas e as processa em conjunto, economizando tempo e recursos, além de trazer uma abordagem mais humana para a comunicação.
+
+### Problema
+Cada pessoa tem um tempo diferente de digitação, fazendo com que o tempo de debounce de 10s seja insuficiente para quem digita mais lentamente. Para resolver isso, poderíamos implementar um sistema de debounce adaptativo, que aumenta o tempo de espera conforme o usuário digita.
+
 ## Arquitetura
 
 O sistema é composto pelos seguintes componentes:
