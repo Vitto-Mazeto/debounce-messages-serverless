@@ -6,9 +6,7 @@ This project implements a serverless system on AWS for processing messages from 
 
 ## Motivation
 
-While developing various integration solutions with messaging applications, I noticed that sending "choppy" messages - where the overall context of the request was passed through multiple messages - was a common problem. To address this, I created this project to concatenate messages received from the same number within a short time frame. 
-
-The system batches incoming messages for processing, saving time and resources while also fostering a more human-like communication approach.
+While developing various integration solutions with messaging applications, I noticed that sending "choppy" messages - where the overall context of the request is fragmented across multiple messages - was a common issue. To address this, I created this project to concatenate messages received from the same number within a short time frame. This way, the system batches received messages and processes them together, saving time and resources while providing a more coherent and human-like communication experience.
 
 ### Problem
 
