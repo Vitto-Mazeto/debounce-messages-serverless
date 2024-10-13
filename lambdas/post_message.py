@@ -2,7 +2,11 @@ import json
 import boto3
 import time
 import os
+import logging
 from decimal import Decimal
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
@@ -23,7 +27,7 @@ def get_existing_message(phone_number):
 
 def update_existing_message(phone_number, existing_message, new_text, timestamp):
     """Update the existing message in DynamoDB."""
-    print(f"Updating existing message for {phone_number}")
+    logger.info(f"Updating existing message for {phone_number}")
     existing_text = existing_message.get('text', '')
     concatenated_text = f"{existing_text} {new_text}".strip()
 
@@ -43,7 +47,7 @@ def cancel_existing_execution(existing_message):
     """Cancel an existing Step Functions execution if it exists."""
     if 'execution_arn' in existing_message:
         execution_arn = existing_message['execution_arn']
-        print(f"Cancelling existing execution {execution_arn}")
+        logger.info(f"Cancelling existing execution {execution_arn}")
         try:
             step_functions.stop_execution(
                 executionArn=execution_arn,
@@ -51,12 +55,12 @@ def cancel_existing_execution(existing_message):
                 cause='A new message was received, cancelling processing.'
             )
         except step_functions.exceptions.ExecutionDoesNotExist:
-            pass  # Execution might have already completed
+            logger.warning(f"Execution {execution_arn} does not exist, might have completed already.")
 
 
 def create_new_message(phone_number, text, timestamp):
     """Create a new message entry in DynamoDB."""
-    print(f"Creating new message for {phone_number}")
+    logger.info(f"Creating new message for {phone_number}")
     table.put_item(
         Item={
             'phone_number': phone_number,
@@ -107,6 +111,8 @@ def lambda_handler(event, context):
         UpdateExpression="SET execution_arn = :arn",
         ExpressionAttributeValues={':arn': execution_arn}
     )
+
+    logger.info('Message received and Step Functions execution started for %s', phone_number)
 
     return {
         'statusCode': 200,
