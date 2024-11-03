@@ -8,10 +8,12 @@ provider "aws" {
 
 # Cria a tabela DynamoDB para received_messages
 module "dynamodb_received_messages" {
-  source        = "./modules/dynamodb"
-  table_name    = "debouncer_received_messages"
-  hash_key_name = "phone_number"
-  hash_key_type = "S"
+  source           = "./modules/dynamodb"
+  table_name       = "debouncer_received_messages"
+  hash_key_name    = "app_id"
+  hash_key_type    = "S"
+  range_key_name   = "phone_number"
+  range_key_type   = "S"
 }
 
 # ----------------------------------------
@@ -58,6 +60,13 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 
 resource "aws_iam_role_policy_attachment" "lambda_step_functions" {
   policy_arn = "arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess"
+  role       = aws_iam_role.lambda_role.name
+
+  depends_on = [aws_iam_role.lambda_role]
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_full_access" {
+  policy_arn = "arn:aws:iam::aws:policy/AWSLambda_FullAccess"
   role       = aws_iam_role.lambda_role.name
 
   depends_on = [aws_iam_role.lambda_role]
@@ -125,6 +134,7 @@ module "lambda_process_message" {
   layers        = []
   environment_variables = {
     DYNAMODB_TABLE = module.dynamodb_received_messages.table_name
+    PROCESSING_LAMBDAS_MAP = "{\"patricia\": \"patricia-chat-lambda\", \"app2\": \"blabla\"}"
   }
 }
 

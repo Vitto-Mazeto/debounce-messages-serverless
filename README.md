@@ -2,11 +2,27 @@
 
 ## Overview
 
-This project implements a serverless system on AWS for processing messages from WhatsApp (or other messaging tools such as Direct, Telegram, etc.) using a debounce mechanism. It leverages various AWS services, including Lambda, DynamoDB, API Gateway, and Step Functions, all orchestrated and provisioned using Terraform.
+This project implements a serverless system on AWS for processing messages from various messaging tools (like WhatsApp, Telegram, and others) using a debounce mechanism. It leverages multiple AWS services, including Lambda, DynamoDB, API Gateway, and Step Functions, all orchestrated and provisioned using Terraform.
+
+### Enhanced Gateway Functionality
+
+The system serves as an enhanced gateway specifically designed for managing and processing messages from multiple applications. Unlike a standard proxy, which merely forwards requests and responses between clients and servers, this gateway is optimized for several key functionalities:
+
+1. **Contextual Message Handling**: By using an `app_id`, the system identifies the source of incoming messages, ensuring they are routed to the correct Lambda functions. This contextual awareness allows for tailored processing logic depending on the application, leading to better handling of specific requirements.
+
+2. **Debouncing Mechanism**: The system implements a debounce logic to aggregate messages received in quick succession from the same source. This not only optimizes resource usage by reducing the number of function invocations but also enhances the overall communication flow, making it more coherent and human-like.
+
+3. **Dynamic Routing**: Instead of a fixed routing approach, this gateway can easily adapt to different applications by simply updating environment variables. When new applications are added, developers need only to include the new mappings in the environment configuration, making the system highly scalable and maintainable.
+
+4. **Integration with AWS Services**: By leveraging AWS Lambda, DynamoDB, and Step Functions, the system seamlessly integrates multiple AWS capabilities, including storage, processing, and workflow management. This allows for a robust infrastructure that can handle complex message processing scenarios with minimal operational overhead.
+
+5. **Simplified Webhook Management**: The system centralizes webhook management, allowing multiple applications to send messages to a single endpoint. It then takes care of the necessary routing and processing based on the provided `app_id`, simplifying integration for developers.
+
+Overall, this enhanced gateway not only routes messages but also enriches the message processing experience, enabling effective communication management across various messaging platforms while minimizing latency and resource consumption.
 
 ## Motivation
 
-While developing various integration solutions with messaging applications, I noticed that receiving "choppy" messages - where the overall context of the request is fragmented across multiple messages - was a common issue. To address this, I created this project to concatenate messages received from the same number within a short time frame. This way, the system batches received messages and processes them together, saving time and resources while providing a more coherent and human-like communication experience.
+While developing various integration solutions with messaging applications and LLMs, I noticed that receiving "choppy" messages — where the overall context of the request is fragmented across multiple messages — was a common issue. To address this, I created this project to concatenate messages received from the same number within a short time frame. This system batches received messages and processes them together, saving time and resources while providing a more coherent and human-like communication experience.
 
 ### Problem
 
@@ -67,23 +83,30 @@ The system consists of the following components:
 
 After deployment, you will have an endpoint in **API Gateway** to receive messages. Use this endpoint to integrate with your messaging system on WhatsApp, Instagram, Telegram, etc.
 
-The processing flow will be:
+### Processing Flow
+
 1. The message is received by the `post_message` function.
    - This is what your messaging system should call.
 2. The message is stored in DynamoDB.
 3. A Step Function execution is initiated.
 4. After 10 seconds, the `process_message` function is called to process the message.
-    - If another message arrives for the same number before the 10 seconds are up, the debounce time is reset, and the previous message is concatenated.
+   - If another message arrives for the same number before the 10 seconds are up, the debounce time is reset, and the previous message is concatenated.
+
+### Query Parameter Requirement
+
+To properly route messages to the right processing function, ensure that the `appId` query parameter is included in your webhook requests. This parameter allows the system to determine which application the message is coming from and to redirect it accordingly.
+
+### Adding New Applications
+
+To support additional applications, simply add their configuration to the environment variable map in your `process_message`. For example:
+
+PROCESSING_LAMBDAS_MAP = "{\"bot1\": \"bot1-chat-lambda\", \"app2\": \"blabla\"}"
+
+This flexibility allows you to easily extend the system to handle new integrations without modifying the core processing logic.
 
 ### Processing Logic
 
-The `process_message` function can dynamically determine where to send the processed message based on environment variables configured in your `.env` file. 
-
-- **Send to API or Another Lambda**: 
-  - If the environment variable `SEND_TO_API` is set to `true`, the processed message will be sent to an external API specified by the `API_URL` environment variable.
-  - If `SEND_TO_API` is not set to `true`, the message will be sent to another Lambda function specified by the `PROCESSING_LAMBDA_FUNCTION` environment variable.
-
-This flexibility allows you to switch between processing options easily without altering the core logic of the Lambda functions.
+The `process_message` function dynamically determines where to send the processed message based on environment variables configured in your lambda env variables. This map of possible Lambda functions based on `app_id` allows seamless redirection of messages to the appropriate processing logic.
 
 ## Project Structure
 
@@ -100,8 +123,8 @@ project/
 │   ├── lambda/             # Lambda functions module
 │   └── step_functions/     # Step Functions module
 └── lambda/                 # Source code for Lambda functions
-    ├── post_message.py
-    └── process_message.py
+    ├── post_message
+    └── process_message
 ```
 
 ## Customization
