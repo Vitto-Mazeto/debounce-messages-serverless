@@ -1,4 +1,4 @@
-# Message Debouncer To Serverless Processing
+# Message Debouncer and Sender with Serverless Processing
 
 ## Overview
 
@@ -17,6 +17,8 @@ The system serves as an enhanced gateway specifically designed for managing and 
 4. **Integration with AWS Services**: By leveraging AWS Lambda, DynamoDB, and Step Functions, the system seamlessly integrates multiple AWS capabilities, including storage, processing, and workflow management. This allows for a robust infrastructure that can handle complex message processing scenarios with minimal operational overhead.
 
 5. **Simplified Webhook Management**: The system centralizes webhook management, allowing multiple applications to send messages to a single endpoint. It then takes care of the necessary routing and processing based on the provided `app_id`, simplifying integration for developers.
+
+6. **Queue-Based Message Sending**: A new feature allows applications to send messages to the API through an SQS queue, enhancing the scalability of message processing. This mechanism enables messages to be sent back to the clients, which are typically the same ones that sent the messages being answered.
 
 Overall, this enhanced gateway not only routes messages but also enriches the message processing experience, enabling effective communication management across various messaging platforms while minimizing latency and resource consumption.
 
@@ -38,6 +40,7 @@ The system consists of the following components:
    - `process_message`: Processes the messages after the debounce period.
 3. **Step Functions**: Implements the debounce logic, waiting 10 seconds before processing the message.
 4. **IAM Roles**: Manages the necessary permissions for the AWS services.
+5. **SQS Queue**: Used to send messages to the API, enabling asynchronous processing.
 
 ## Prerequisites
 
@@ -92,17 +95,46 @@ After deployment, you will have an endpoint in **API Gateway** to receive messag
 4. After 10 seconds, the `process_message` function is called to process the message.
    - If another message arrives for the same number before the 10 seconds are up, the debounce time is reset, and the previous message is concatenated.
 
+### Queue-Based Message Sending
+
+To send messages to the API via SQS, format the message in JSON as follows:
+
+```json
+{
+  "app_id": "patricia",
+  "phone_number": "5511996534923",
+  "message_to_send": "Olá, da AWS"
+}
+```
+
+#### Sending a Message
+
+1. Use the SQS console or an SQS client to send a message formatted like above to the queue.
+2. The `send_message_api` Lambda will then read the message from the queue and process it sending the message to the API.
+
 ### Query Parameter Requirement
 
 To properly route messages to the right processing function, ensure that the `appId` query parameter is included in your webhook requests. This parameter allows the system to determine which application the message is coming from and to redirect it accordingly.
 
-### Adding New Applications
+### Adding New Applications for Processing Webhook
 
 To support additional applications, simply add their configuration to the environment variable map in your `process_message`. For example:
 
+```json
 PROCESSING_LAMBDAS_MAP = "{\"bot1\": \"bot1-chat-lambda\", \"app2\": \"blabla\"}"
+```
 
 This flexibility allows you to easily extend the system to handle new integrations without modifying the core processing logic.
+
+### API_URLS_MAP Example (To send messages)
+
+In the environment variables of your Lambda function, you can also define an `API_URLS_MAP` to map application IDs to their respective API endpoints. Here’s an example configuration:
+
+```json
+API_URLS_MAP = "{\"patricia\": \"https://api.z-api.io/instances/instance-id/token/token/send-text\", \"other_app\": \"https://api.example.com/other\"}"
+```
+
+This allows you to dynamically route processed messages to the correct API endpoint based on the `app_id` present in the incoming message.
 
 ### Processing Logic
 
@@ -124,6 +156,7 @@ project/
 │   └── step_functions/     # Step Functions module
 └── lambda/                 # Source code for Lambda functions
     ├── post_message
+    ├── send_message_api
     └── process_message
 ```
 
