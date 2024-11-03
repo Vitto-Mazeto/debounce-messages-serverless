@@ -5,6 +5,8 @@ import os
 import logging
 from decimal import Decimal
 
+from strategy import ZApiStrategy
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -12,6 +14,10 @@ dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ['DYNAMODB_TABLE'])
 step_functions = boto3.client('stepfunctions')
 
+def get_strategy(api_type: str):
+    if api_type == 'z-api':
+        return ZApiStrategy()
+    raise ValueError(f"Unknown API type: {api_type}")
 
 def decimal_to_float(obj):
     """Convert Decimal objects to float for JSON serialization."""
@@ -103,11 +109,13 @@ def start_step_function_execution(phone_number, message_text, last_update):
 
 
 def lambda_handler(event, context):
+    logger.info('Received event: %s', json.dumps(event))
     """Lambda function entry point."""
     try:
         message = json.loads(event['body'])
-        phone_number = message['phoneNumber']
-        text = message['message']
+        strategy = get_strategy("z-api")
+
+        phone_number, text = strategy.process_message(message)
         timestamp = int(time.time())
         logger.info('Received message from %s: %s', phone_number, text)
 
@@ -115,6 +123,7 @@ def lambda_handler(event, context):
 
         if 'Item' in response:
             existing_message = response['Item']
+            logger.info('Existing message found: %s', existing_message)
             cancel_existing_execution(existing_message)
             updated_message = update_existing_message(phone_number, existing_message, text, timestamp)
         else:

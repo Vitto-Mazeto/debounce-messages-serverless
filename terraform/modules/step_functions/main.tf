@@ -12,12 +12,15 @@ resource "aws_sfn_state_machine" "whatsapp_debounce" {
         Next    = "Process Message"
       }
       "Process Message" = {
-        Type     = "Task"
-        Resource = var.process_message_lambda_arn
-        InputPath = "$"
-        End      = true
+        Type       = "Task"
+        Resource   = "arn:aws:states:::lambda:invoke",
+        OutputPath = "$.Payload",
+        Parameters = {
+          FunctionName = replace(var.process_message_lambda_arn, ":$LATEST", "")
+          "Payload.$"  = "$"
+        }
+        End = true
       }
     }
   })
 }
-

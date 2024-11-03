@@ -9,7 +9,7 @@ provider "aws" {
 # Cria a tabela DynamoDB para received_messages
 module "dynamodb_received_messages" {
   source        = "./modules/dynamodb"
-  table_name    = "received_messages"
+  table_name    = "debouncer_received_messages"
   hash_key_name = "phone_number"
   hash_key_type = "S"
 }
@@ -20,7 +20,7 @@ module "dynamodb_received_messages" {
 
 # Cria a role IAM para as Lambdas
 resource "aws_iam_role" "lambda_role" {
-  name = "lambda_execution_role"
+  name = "debouncer_lambda_execution_role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -104,7 +104,7 @@ resource "aws_iam_role_policy" "step_functions_policy" {
 # Cria a Lambda de post message
 module "lambda_post_message" {
   source        = "./modules/lambda"
-  function_name = "post_message"
+  function_name = "debouncer_post_message"
   role_arn      = aws_iam_role.lambda_role.arn
   zip_file      = "./deployments/post_message.zip"
   layers        = []
@@ -119,7 +119,7 @@ module "lambda_post_message" {
 # Cria a Lambda de process message
 module "lambda_process_message" {
   source        = "./modules/lambda"
-  function_name = "process_message"
+  function_name = "debouncer_process_message"
   role_arn      = aws_iam_role.lambda_role.arn
   zip_file      = "./deployments/process_message.zip"
   layers        = []
@@ -136,7 +136,7 @@ module "lambda_process_message" {
 module "step_function_whatsapp_debounce" {
   source                     = "./modules/step_functions"
   step_functions_role_arn    = aws_iam_role.step_functions_role.arn
-  process_message_lambda_arn = module.lambda_process_message.lambda_invoke_arn
+  process_message_lambda_arn = module.lambda_process_message.lambda_arn
 }
 
 # ----------------------------------------
@@ -145,7 +145,7 @@ module "step_function_whatsapp_debounce" {
 
 # Cria o API Gateway
 resource "aws_apigatewayv2_api" "http_api" {
-  name          = "http-api-whatsapp"
+  name          = "debouncer-http-api-whatsapp"
   protocol_type = "HTTP"
 }
 
@@ -161,6 +161,6 @@ module "api_gateway_post_message" {
   source            = "./modules/api_gateway"
   api_id            = aws_apigatewayv2_api.http_api.id
   method            = "POST"
-  path              = "/post-message"
+  path              = "/debouncer-post-message"
   lambda_invoke_arn = module.lambda_post_message.lambda_invoke_arn
 }

@@ -32,3 +32,5 @@ terraform.rc
 
 # Ignore sensitive files
 secret.tfvars
+
+*.zip
