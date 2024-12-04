@@ -12,7 +12,10 @@ class ZApiStrategy(MessageStrategy):
 
 class EvolutionStrategy(MessageStrategy):
     def process_message(self, message):
-        phone_number = message['data']['key']['remoteJid'].split('@')[0]
-        text = message['data']['message']['conversation']
+        if not message['data']['key']['fromMe']:
+            phone_number = message['data']['key']['remoteJid'].split('@')[0]
+            text = message['data']['message']['conversation']
 
-        return phone_number, text
+            return phone_number, text
+        else:
+            return None

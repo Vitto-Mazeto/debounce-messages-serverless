@@ -9,20 +9,20 @@ logger.setLevel(logging.INFO)
 
 # Get environment variables
 API_URLS_MAP = json.loads(os.environ.get('API_URLS_MAP', '{}'))  # Mapeamento de app_id para URL da API
-CLIENT_TOKEN = os.environ.get('CLIENT_TOKEN')  # Token do cliente para autenticação
+EVOLUTION_API_KEY = os.environ.get('EVOLUTION_API_KEY')
 
 def send_text_message(phone, message, api_url):
-    """Envia uma mensagem de texto para o número de telefone especificado usando a API."""
-    headers = {"Content-Type": "application/json", "Client-Token": CLIENT_TOKEN}
+    """Envia mensagem via Evolution API"""
+    headers = {"Content-Type": "application/json", "apikey": EVOLUTION_API_KEY}
     
     payload = {
-        "phone": phone,
-        "message": message
+        "number": phone,
+        "text": message
     }
 
     response = requests.post(api_url, json=payload, headers=headers)
 
-    if response.status_code == 200:
+    if str(response.status_code).startswith('20'):
         logger.info('Message sent successfully to %s', phone)
     else:
         logger.error('Failed to send message: %s', response.text)
