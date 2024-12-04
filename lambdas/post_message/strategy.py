@@ -9,3 +9,10 @@ class ZApiStrategy(MessageStrategy):
         text = message['text']['message']
 
         return phone_number, text
+
+class EvolutionStrategy(MessageStrategy):
+    def process_message(self, message):
+        phone_number = message['data']['key']['remoteJid'].split('@')[0]
+        text = message['data']['message']['conversation']
+
+        return phone_number, text

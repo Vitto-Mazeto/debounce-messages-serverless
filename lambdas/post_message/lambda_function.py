@@ -5,7 +5,7 @@ import os
 import logging
 from decimal import Decimal
 
-from strategy import ZApiStrategy
+from strategy import ZApiStrategy, EvolutionStrategy
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -17,6 +17,8 @@ step_functions = boto3.client('stepfunctions')
 def get_strategy(api_type: str):
     if api_type == 'z-api':
         return ZApiStrategy()
+    if api_type == 'evolution':
+        return EvolutionStrategy()
     raise ValueError(f"Unknown API type: {api_type}")
 
 def decimal_to_float(obj):
@@ -111,7 +113,7 @@ def lambda_handler(event, context):
         # Obter app_id e processar a mensagem
         app_id = event['queryStringParameters'].get('appId')
         message = json.loads(event['body'])
-        strategy = get_strategy("z-api")
+        strategy = get_strategy("evolution")
 
         phone_number, text = strategy.process_message(message)
         timestamp = int(time.time())

@@ -2,7 +2,6 @@ import json
 import os
 import logging
 import requests
-import boto3
 
 # Set up logging
 logger = logging.getLogger()
