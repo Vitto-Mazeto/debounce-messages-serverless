@@ -45,3 +45,5 @@ terraform.rc
 secret.tfvars
 
 *.zip
+
+*.env
