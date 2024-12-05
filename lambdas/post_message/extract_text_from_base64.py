@@ -19,7 +19,7 @@ def extract_text_from_base64(base_64):
         audio_file = io.BytesIO(decoded_audio)
         audio_file.name = 'audio.mp3'
 
-        transcript = client.audio.transcriptions.create(model=os.getenv('OPENAI_LLM_MODEL_NAME'), file=audio_file)
+        transcript = client.audio.transcriptions.create(model=os.getenv('OPENAI_LLM_MODEL_NAME'), file=audio_file, language='pt')
 
         return transcript.text
     except Exception as e:
