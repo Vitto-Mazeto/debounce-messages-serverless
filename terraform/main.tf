@@ -10,7 +10,7 @@ provider "aws" {
 module "dynamodb_received_messages" {
   source           = "./modules/dynamodb"
   table_name       = "debouncer_received_messages"
-  hash_key_name    = "app_id"
+  hash_key_name    = "instance"
   hash_key_type    = "S"
   range_key_name   = "phone_number"
   range_key_type   = "S"
