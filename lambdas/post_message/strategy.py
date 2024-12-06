@@ -23,12 +23,17 @@ class EvolutionStrategy(MessageStrategy):
 
         phone_number = self._extract_phone_number(data)
         text = self._process_message_content(content)
+        instance = self._extract_instance(message)
 
-        return phone_number, text
+        return phone_number, text, instance
 
     @staticmethod
     def _extract_phone_number(data):
         return data['key']['remoteJid'].split('@')[0]
+
+    @staticmethod
+    def _extract_instance(message):
+        return message.get('instance')
 
     def _process_message_content(self, content):
         if 'conversation' in content:
