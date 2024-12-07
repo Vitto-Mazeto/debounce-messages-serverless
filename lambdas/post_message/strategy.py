@@ -53,13 +53,13 @@ class EvolutionStrategy(MessageStrategy):
 
     @staticmethod
     def _extract_text_from_base64(message_type, content):
+        base_64 = content.get('base64')
+
         if message_type == 'audioMessage':
-            base_64 = content.get('base64')
             strategy = AudioExtractionStrategy()
             return strategy.extract_text(base_64)
 
         if message_type == 'imageMessage':
-            base_64 = content['imageMessage'].get('base64')
             strategy = ImageExtractionStrategy()
             return strategy.extract_text(base_64)
 

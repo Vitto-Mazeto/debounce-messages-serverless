@@ -58,7 +58,7 @@ class ImageExtractionStrategy(TextExtractionStrategy):
                         "content": [
                             {
                                 "type": "text",
-                                "text": "Descreva o que está nessa imagem.",
+                                "text": "Descreva o que está nessa imagem. Caso tenha texto, diga o que está escrito.",
                             },
                             {
                                 "type": "image_url",
