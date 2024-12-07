@@ -1,3 +1,6 @@
+from lambdas.post_message.text_extraction_strategy import AudioExtractionStrategy, ImageExtractionStrategy
+
+
 class MessageStrategy:
     def process_message(self, message):
         raise NotImplementedError("This method should be overridden by subclasses")
@@ -12,10 +15,52 @@ class ZApiStrategy(MessageStrategy):
 
 class EvolutionStrategy(MessageStrategy):
     def process_message(self, message):
-        if not message['data']['key']['fromMe']:
-            phone_number = message['data']['key']['remoteJid'].split('@')[0]
-            text = message['data']['message']['conversation']
+        data = message.get('data', {})
+        content = data.get('message', {})
 
-            return phone_number, text
-        else:
-            return None
+        if data.get('key', {}).get('fromMe'):
+            return None, None
+
+        phone_number = self._extract_phone_number(data)
+        text = self._process_message_content(content)
+        instance = self._extract_instance(message)
+
+        return phone_number, text, instance
+
+    @staticmethod
+    def _extract_phone_number(data):
+        return data['key']['remoteJid'].split('@')[0]
+
+    @staticmethod
+    def _extract_instance(message):
+        return message.get('instance')
+
+    def _process_message_content(self, content):
+        if 'conversation' in content:
+            return self._extract_text(content)
+
+        if 'audioMessage' in content:
+            return self._extract_text_from_base64('audioMessage', content)
+
+        if 'imageMessage' in content:
+            return self._extract_text_from_base64('imageMessage', content)
+
+        return None
+
+    @staticmethod
+    def _extract_text(content):
+        return content.get('conversation')
+
+    @staticmethod
+    def _extract_text_from_base64(message_type, content):
+        base_64 = content.get('base64')
+
+        if message_type == 'audioMessage':
+            strategy = AudioExtractionStrategy()
+            return strategy.extract_text(base_64)
+
+        if message_type == 'imageMessage':
+            strategy = ImageExtractionStrategy()
+            return strategy.extract_text(base_64)
+
+        raise ValueError(f"Unknown message type: {message_type}")
