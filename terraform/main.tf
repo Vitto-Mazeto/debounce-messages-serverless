@@ -165,8 +165,11 @@ module "lambda_post_message" {
   zip_file      = "./deployments/post_message.zip"
   layers        = []
   environment_variables = {
-    STEP_FUNCTION_ARN = module.step_function_whatsapp_debounce.state_machine_arn
-    DYNAMODB_TABLE    = module.dynamodb_received_messages.table_name
+    STEP_FUNCTION_ARN         = module.step_function_whatsapp_debounce.state_machine_arn
+    DYNAMODB_TABLE            = module.dynamodb_received_messages.table_name
+    OPENAI_API_KEY            = var.openai_api_key
+    OPENAI_AUDIO_MODEL_NAME   = "whisper-1"
+    OPENAI_VISION_MODEL_NAME  = "gpt-4o-mini"
   }
   create_api_gw        = true
   api_gw_execution_arn = aws_apigatewayv2_api.http_api.execution_arn
@@ -181,7 +184,7 @@ module "lambda_process_message" {
   layers        = []
   environment_variables = {
     DYNAMODB_TABLE = module.dynamodb_received_messages.table_name
-    PROCESSING_LAMBDAS_MAP = "{\"patricia\": \"patricia-chat-lambda\", \"app2\": \"blabla\"}"
+    PROCESSING_LAMBDAS_MAP = "{\"TesteNutrix\": \"patricia-chat-lambda\", \"other-instance-this-is-just-an-example\": \"other-lambda-this-is-just-an-example\"}"
   }
 }
 
@@ -194,8 +197,8 @@ module "lambda_send_message_api" {
   # Use Klayers for requests https://github.com/keithrozario/Klayers
   layers        = ["arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p311-requests:12"]
   environment_variables = {
-    CLIENT_TOKEN = var.client_token,
-    API_URLS_MAP = var.api_urls_map
+    EVOLUTION_API_KEY       = var.evolution_api_key,
+    EVOLUTION_API_BASE_URL  = var.evolution_api_base_url
   }
 }
 

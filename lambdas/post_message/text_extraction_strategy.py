@@ -33,7 +33,7 @@ class AudioExtractionStrategy(TextExtractionStrategy):
             audio_file.name = 'audio.mp3'
 
             transcript = self.client.audio.transcriptions.create(
-                model=os.getenv('OPENAI_LLM_MODEL_NAME'),
+                model=os.getenv('OPENAI_AUDIO_MODEL_NAME'),
                 file=audio_file,
                 language='pt'
             )
@@ -51,7 +51,7 @@ class ImageExtractionStrategy(TextExtractionStrategy):
 
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=os.getenv('OPENAI_VISION_MODEL_NAME'),
                 messages=[
                     {
                         "role": "user",
