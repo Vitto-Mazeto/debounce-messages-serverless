@@ -1,4 +1,4 @@
-from lambdas.post_message.extract_text_from_base64 import extract_text_from_base64
+from lambdas.post_message.text_extraction_strategy import AudioExtractionStrategy, ImageExtractionStrategy
 
 
 class MessageStrategy:
@@ -40,9 +40,10 @@ class EvolutionStrategy(MessageStrategy):
             return self._extract_text(content)
 
         if 'audioMessage' in content:
-            return self._extract_text_from_audio(content)
+            return self._extract_text_from_base64('audioMessage', content)
 
-        # TODO: O áudio dando certo, coloca aqui a lógica para processar imagens
+        if 'imageMessage' in content:
+            return self._extract_text_from_base64('imageMessage', content)
 
         return None
 
@@ -51,6 +52,15 @@ class EvolutionStrategy(MessageStrategy):
         return content.get('conversation')
 
     @staticmethod
-    def _extract_text_from_audio(content):
+    def _extract_text_from_base64(message_type, content):
         base_64 = content.get('base64')
-        return extract_text_from_base64(base_64)
+
+        if message_type == 'audioMessage':
+            strategy = AudioExtractionStrategy()
+            return strategy.extract_text(base_64)
+
+        if message_type == 'imageMessage':
+            strategy = ImageExtractionStrategy()
+            return strategy.extract_text(base_64)
+
+        raise ValueError(f"Unknown message type: {message_type}")

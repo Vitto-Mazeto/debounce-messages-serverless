@@ -1,9 +1,14 @@
-variable "client_token" {
-  description = "Token de cliente para autenticação zapi"
+variable "openai_api_key" {
+  description = "Chave da API da OpenAI"
+  type = string
+}
+
+variable "evolution_api_key" {
+  description = "Chave da API do evolution"
   type        = string
 }
 
-variable "api_urls_map" {
-  description = "Mapeamento de URLs da API zapi"
+variable "evolution_api_base_url" {
+  description = "URL base da API do evolution"
   type        = string
 }
